@@ -78,10 +78,28 @@ type ClientTrafficPolicySpec struct {
 	//
 	// +optional
 	Path *PathSettings `json:"path,omitempty"`
+	// Preserve allows configuring request/response preservation options
+	//
+	// +optional
+	Preserve *PreserveSettings `json:"preserve,omitempty"`
 }
 
 // HTTP3Settings provides HTTP/3 configuration on the listener.
 type HTTP3Settings struct {
+}
+
+// Preserve provides request/response preservation options
+type PreserveSettings struct {
+	// RequestHeadersCase controls if request headers should be preserved or lowercased.
+	// Defaults to lowercasing the headers.
+	//
+	// +optional
+	RequestHeadersCase *bool `json:"requestHeadersCase,omitempty"`
+	// RequestHeadersCase controls if request headers should be preserved or lowercased
+	// Defaults to lowercasing the headers.
+	//
+	// +optional
+	ResponseHeadersCase *bool `json:"responseHeadersCase,omitempty"`
 }
 
 // ClientTrafficPolicyStatus defines the state of ClientTrafficPolicy
