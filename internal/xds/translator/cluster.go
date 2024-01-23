@@ -14,6 +14,7 @@ import (
 	clusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	corev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	endpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
+	preservecasev3 "github.com/envoyproxy/go-control-plane/envoy/extensions/http/header_formatters/preserve_case/v3"
 	proxyprotocolv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/proxy_protocol/v3"
 	rawbufferv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/raw_buffer/v3"
 	httpv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/upstreams/http/v3"
@@ -42,6 +43,7 @@ type xdsClusterArgs struct {
 	proxyProtocol  *ir.ProxyProtocol
 	circuitBreaker *ir.CircuitBreaker
 	healthCheck    *ir.HealthCheck
+	preserveCase   bool
 }
 
 type EndpointType int
@@ -95,9 +97,7 @@ func buildXdsCluster(args *xdsClusterArgs) *clusterv3.Cluster {
 			break
 		}
 	}
-	if isHTTP2 {
-		cluster.TypedExtensionProtocolOptions = buildTypedExtensionProtocolOptions()
-	}
+	cluster.TypedExtensionProtocolOptions = buildTypedExtensionProtocolOptions(isHTTP2, args.preserveCase)
 
 	// Set Load Balancer policy
 	//nolint:gocritic
@@ -315,15 +315,42 @@ func buildXdsClusterLoadAssignment(clusterName string, destSettings []*ir.Destin
 	return &endpointv3.ClusterLoadAssignment{ClusterName: clusterName, Endpoints: localities}
 }
 
-func buildTypedExtensionProtocolOptions() map[string]*anypb.Any {
-	protocolOptions := httpv3.HttpProtocolOptions{
-		UpstreamProtocolOptions: &httpv3.HttpProtocolOptions_ExplicitHttpConfig_{
+func buildTypedExtensionProtocolOptions(isHTTP2 bool, preserveCase bool) map[string]*anypb.Any {
+
+	protocolOptions := httpv3.HttpProtocolOptions{}
+
+	if isHTTP2 {
+		protocolOptions.UpstreamProtocolOptions = &httpv3.HttpProtocolOptions_ExplicitHttpConfig_{
 			ExplicitHttpConfig: &httpv3.HttpProtocolOptions_ExplicitHttpConfig{
+				// This forces Envoy to connect to this cluster with HTTP/2
 				ProtocolConfig: &httpv3.HttpProtocolOptions_ExplicitHttpConfig_Http2ProtocolOptions{},
 			},
-		},
+		}
+	} else if preserveCase {
+		// TODO: if/when upstream protocol negotiation is supported, replace ExplicitHttpConfig with
+		// whatever is needed
+		preservecaseAny, _ := anypb.New(&preservecasev3.PreserveCaseFormatterConfig{})
+		protocolOptions.UpstreamProtocolOptions = &httpv3.HttpProtocolOptions_ExplicitHttpConfig_{
+			ExplicitHttpConfig: &httpv3.HttpProtocolOptions_ExplicitHttpConfig{
+				ProtocolConfig: &httpv3.HttpProtocolOptions_ExplicitHttpConfig_HttpProtocolOptions{
+					HttpProtocolOptions: &corev3.Http1ProtocolOptions{
+						HeaderKeyFormat: &corev3.Http1ProtocolOptions_HeaderKeyFormat{
+							HeaderFormat: &corev3.Http1ProtocolOptions_HeaderKeyFormat_StatefulFormatter{
+								StatefulFormatter: &corev3.TypedExtensionConfig{
+									Name:        "preserve_case",
+									TypedConfig: preservecaseAny,
+								},
+							},
+						},
+					},
+				},
+			},
+		}
 	}
 
+	if protocolOptions.UpstreamProtocolOptions == nil {
+		return nil
+	}
 	anyProtocolOptions, _ := anypb.New(&protocolOptions)
 
 	extensionOptions := map[string]*anypb.Any{

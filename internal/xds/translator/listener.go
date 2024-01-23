@@ -16,6 +16,7 @@ import (
 	hcmv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	tcpv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/tcp_proxy/v3"
 	udpv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/udp/udp_proxy/v3"
+	preservecasev3 "github.com/envoyproxy/go-control-plane/envoy/extensions/http/header_formatters/preserve_case/v3"
 	quicv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/quic/v3"
 	tlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/resource/v3"
@@ -39,6 +40,32 @@ const (
 	// https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#envoy-v3-api-field-config-core-v3-http2protocoloptions-initial-connection-window-size
 	http2InitialConnectionWindowSize = 1048576 // 1 MiB
 )
+
+func http1ProtocolOptions(http1 *ir.HTTP1Settings) (*corev3.Http1ProtocolOptions, error) {
+	if http1 == nil {
+		return nil, nil
+	}
+	var headerFormat *corev3.Http1ProtocolOptions_HeaderKeyFormat
+	if http1.RequestHeadersCase {
+		preservecaseAny, err := anypb.New(&preservecasev3.PreserveCaseFormatterConfig{})
+		if err != nil {
+			return nil, err
+		}
+		headerFormat = &corev3.Http1ProtocolOptions_HeaderKeyFormat{
+			HeaderFormat: &corev3.Http1ProtocolOptions_HeaderKeyFormat_StatefulFormatter{
+				StatefulFormatter: &corev3.TypedExtensionConfig{
+					Name:        "preserve_case",
+					TypedConfig: preservecaseAny,
+				},
+			},
+		}
+	}
+
+	return &corev3.Http1ProtocolOptions{
+		HeaderKeyFormat: headerFormat,
+		EnableTrailers:  http1.EnableTrailers,
+	}, nil
+}
 
 func http2ProtocolOptions() *corev3.Http2ProtocolOptions {
 	return &corev3.Http2ProtocolOptions{
@@ -111,7 +138,10 @@ func (t *Translator) addXdsHTTPFilterChain(xdsListener *listenerv3.Listener, irL
 	if err != nil {
 		return err
 	}
-
+	http1ProtocolOpts, err := http1ProtocolOptions(irListener.HTTP1)
+	if err != nil {
+		return err
+	}
 	// HTTP filter configuration
 	var statPrefix string
 	if irListener.TLS != nil {
@@ -130,6 +160,7 @@ func (t *Translator) addXdsHTTPFilterChain(xdsListener *listenerv3.Listener, irL
 				RouteConfigName: irListener.Name,
 			},
 		},
+		HttpProtocolOptions: http1ProtocolOpts,
 		// Add HTTP2 protocol options
 		// Set it by default to also support HTTP1.1 to HTTP2 Upgrades
 		Http2ProtocolOptions: http2ProtocolOptions(),

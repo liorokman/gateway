@@ -78,18 +78,18 @@ type ClientTrafficPolicySpec struct {
 	//
 	// +optional
 	Path *PathSettings `json:"path,omitempty"`
-	// Preserve allows configuring request/response preservation options
+	// HTTP1 provides HTTP/1 configuration on the listener.
 	//
 	// +optional
-	Preserve *PreserveSettings `json:"preserve,omitempty"`
+	HTTP1 *HTTP1Settings `json:"http1,omitempty"`
 }
 
 // HTTP3Settings provides HTTP/3 configuration on the listener.
 type HTTP3Settings struct {
 }
 
-// Preserve provides request/response preservation options
-type PreserveSettings struct {
+// HTTP1Settings provides HTTP/1 specific configuration on the listener
+type HTTP1Settings struct {
 	// RequestHeadersCase controls if request headers should be preserved or lowercased.
 	// Defaults to lowercasing the headers.
 	//
@@ -100,6 +100,11 @@ type PreserveSettings struct {
 	//
 	// +optional
 	ResponseHeadersCase *bool `json:"responseHeadersCase,omitempty"`
+	// EnableTrailers specifies if Envoy Proxy should keep HTTP/1.1 trailers. The default
+	// behavior is to drop trailers.
+	//
+	// +optional
+	EnableTrailers *bool `json:"enableTrailers,omitempty"`
 }
 
 // ClientTrafficPolicyStatus defines the state of ClientTrafficPolicy

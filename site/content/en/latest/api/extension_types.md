@@ -223,6 +223,7 @@ _Appears in:_
 | `http3` _[HTTP3Settings](#http3settings)_ | HTTP3 provides HTTP/3 configuration on the listener. |
 | `tls` _[TLSSettings](#tlssettings)_ | TLS settings configure TLS termination settings with the downstream client. |
 | `path` _[PathSettings](#pathsettings)_ | Path enables managing how the incoming path set by clients can be normalized. |
+| `http1` _[HTTP1Settings](#http1settings)_ | HTTP1 provides HTTP/1 configuration on the listener. |
 
 
 
@@ -913,6 +914,22 @@ _Appears in:_
 | `group` _string_ |  |
 | `version` _string_ |  |
 | `kind` _string_ |  |
+
+
+#### HTTP1Settings
+
+
+
+HTTP1Settings provides HTTP/1 specific configuration on the listener
+
+_Appears in:_
+- [ClientTrafficPolicySpec](#clienttrafficpolicyspec)
+
+| Field | Description |
+| --- | --- |
+| `requestHeadersCase` _boolean_ | RequestHeadersCase controls if request headers should be preserved or lowercased. Defaults to lowercasing the headers. |
+| `responseHeadersCase` _boolean_ | RequestHeadersCase controls if request headers should be preserved or lowercased Defaults to lowercasing the headers. |
+| `enableTrailers` _boolean_ | EnableTrailers specifies if Envoy Proxy should keep HTTP/1.1 trailers. The default behavior is to drop trailers. |
 
 
 #### HTTP3Settings

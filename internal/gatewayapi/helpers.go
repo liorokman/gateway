@@ -66,54 +66,30 @@ func ObjectNamePtr(val string) *v1alpha2.ObjectName {
 	return &objectName
 }
 
-func PathMatchTypeDerefOr(matchType *gwapiv1.PathMatchType, defaultType gwapiv1.PathMatchType) gwapiv1.PathMatchType {
-	if matchType != nil {
-		return *matchType
+func DereferenceOr[T any, pT *T](value pT, defaultValue T) T {
+	if value != nil {
+		return *value
 	}
-	return defaultType
+	return defaultValue
 }
 
-func GRPCMethodMatchTypeDerefOr(matchType *v1alpha2.GRPCMethodMatchType, defaultType v1alpha2.GRPCMethodMatchType) v1alpha2.GRPCMethodMatchType {
-	if matchType != nil {
-		return *matchType
+func stringDerefOr[T ~string, pT *T](value pT, defaultValue string) string {
+	if value != nil && *value != "" {
+		return string(*value)
 	}
-	return defaultType
-}
-
-func HeaderMatchTypeDerefOr(matchType *gwapiv1.HeaderMatchType, defaultType gwapiv1.HeaderMatchType) gwapiv1.HeaderMatchType {
-	if matchType != nil {
-		return *matchType
-	}
-	return defaultType
-}
-
-func QueryParamMatchTypeDerefOr(matchType *gwapiv1.QueryParamMatchType,
-	defaultType gwapiv1.QueryParamMatchType) gwapiv1.QueryParamMatchType {
-	if matchType != nil {
-		return *matchType
-	}
-	return defaultType
+	return defaultValue
 }
 
 func NamespaceDerefOr(namespace *gwapiv1.Namespace, defaultNamespace string) string {
-	if namespace != nil && *namespace != "" {
-		return string(*namespace)
-	}
-	return defaultNamespace
+	return stringDerefOr(namespace, defaultNamespace)
 }
 
 func GroupDerefOr(group *gwapiv1.Group, defaultGroup string) string {
-	if group != nil && *group != "" {
-		return string(*group)
-	}
-	return defaultGroup
+	return stringDerefOr(group, defaultGroup)
 }
 
 func KindDerefOr(kind *gwapiv1.Kind, defaultKind string) string {
-	if kind != nil && *kind != "" {
-		return string(*kind)
-	}
-	return defaultKind
+	return stringDerefOr(kind, defaultKind)
 }
 
 // IsRefToGateway returns whether the provided parent ref is a reference

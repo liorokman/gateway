@@ -298,6 +298,9 @@ func (t *Translator) translateClientTrafficPolicyForListener(policySpec *egv1a1.
 		// Translate Path Settings
 		translatePathSettings(policySpec.Path, httpIR)
 
+		// Translate Preserve Settings
+		translateHTTP1Settings(policySpec.HTTP1, httpIR)
+
 		// enable http3 if set and TLS is enabled
 		if httpIR.TLS != nil && policySpec.HTTP3 != nil {
 			httpIR.HTTP3 = &ir.HTTP3Settings{}
@@ -417,5 +420,15 @@ func translateListenerTLSParameters(tlsParams *egv1a1.TLSSettings, httpIR *ir.HT
 	}
 	if len(tlsParams.SignatureAlgorithms) > 0 {
 		httpIR.TLS.SignatureAlgorithms = tlsParams.SignatureAlgorithms
+	}
+}
+
+func translateHTTP1Settings(http1 *egv1a1.HTTP1Settings, httpIR *ir.HTTPListener) {
+	if http1 == nil {
+		return
+	}
+	httpIR.HTTP1 = &ir.HTTP1Settings{
+		RequestHeadersCase:  DereferenceOr(http1.RequestHeadersCase, false),
+		ResponseHeadersCase: DereferenceOr(http1.ResponseHeadersCase, false),
 	}
 }

@@ -206,9 +206,19 @@ type HTTPListener struct {
 	EnableProxyProtocol bool `json:"enableProxyProtocol,omitempty" yaml:"enableProxyProtocol,omitempty"`
 	// HTTP3 provides HTTP/3 configuration on the listener.
 	// +optional
-	HTTP3 *HTTP3Settings `json:"http3,omitempty"`
+	HTTP3 *HTTP3Settings `json:"http3,omitempty" yaml:"http3,omitempty"`
 	// Path contains settings for path URI manipulations
-	Path PathSettings `json:"path,omitempty"`
+	Path PathSettings `json:"path,omitempty" yaml:"path,omitempty"`
+	// HTTP1 defines various preservation options for headers
+	HTTP1 *HTTP1Settings `json:"http1,omitempty" yaml:"http1,omitempty"`
+}
+
+// HTTP1Settings defines various types of preservation settings for headers in both directions
+// +k8s:deepcopy-gen=true
+type HTTP1Settings struct {
+	RequestHeadersCase  bool `json:"requestHeadersCase,omitempty" yaml:"requestHeadersCase,omitempty"`
+	ResponseHeadersCase bool `json:"responseHeadersCase,omitempty" yaml:"responseHeadersCase,omitempty"`
+	EnableTrailers      bool `json:"enableTrailers,omitempty" yaml:"enableTrailers,omitempty"`
 }
 
 // Validate the fields within the HTTPListener structure
